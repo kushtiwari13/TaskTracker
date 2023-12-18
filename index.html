@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html lang="en">
+ 
+<head>
+    <meta charset="UTF-8">
+    <title>Kush's Task Tracker App</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+    <style>
+        body {
+          font-family: Arial, sans-serif;
+          margin: 20px;
+          padding: 0;
+          background-color: #f7f7f7;
+        }
+        h1 {
+          text-align: center;
+          margin-bottom: 20px;
+          color: #333;
+        }
+        .container {
+          max-width: 900px;
+          margin: 0 auto;
+          background-color: #fff;
+          padding: 20px;
+          border-radius: 8px;
+          box-shadow: 0px 0px 10px 0px rgba(0,0,0,0.1);
+        }
+        .add-task-container {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          margin-bottom: 20px;
+        }
+        .add-task-container input[type="text"],
+        .add-task-container input[type="date"],
+        .add-task-container button {
+          padding: 10px;
+          border: 1px solid #ccc;
+          border-radius: 4px;
+          font-size: 14px;
+          flex: 1;
+          margin-right: 10px;
+        }
+        .add-task-container button {
+          cursor: pointer;
+          background-color: #3498db;
+          color: #fff;
+          border: none;
+          transition: background-color 0.3s ease;
+          flex: 0 0 auto;
+          width: auto;
+        }
+        .add-task-container button:hover {
+          background-color: #2980b9;
+        }
+        table {
+          border-collapse: collapse;
+          width: 100%;
+        }
+        th, td {
+          border: 1px solid #ddd;
+          padding: 12px;
+          text-align: left;
+        }
+        th {
+          background-color: #f8f8f8;
+          font-weight: bold;
+          color: #333;
+        }
+        .red {
+          background-color: #ffdddd;
+        }
+        .green {
+          background-color: #ddffdd;
+        }
+        .actions {
+          display: flex;
+          align-items: center;
+        }
+        .actions button {
+          border: none;
+          cursor: pointer;
+          padding: 8px;
+          border-radius: 4px;
+          transition: background-color 0.3s ease;
+          font-size: 14px;
+          margin-right: 5px;
+        }
+        .actions button.delete {
+          color: #e74c3c;
+          background-color: transparent;
+          transition: color 0.3s ease;
+        }
+        .actions button.delete:hover {
+          color: #fff;
+          background-color: #e74c3c;
+        }
+        .actions button.done {
+          color: #27ae60;
+          background-color: transparent;
+          transition: color 0.3s ease;
+        }
+        .actions button.done:hover {
+          color: #fff;
+          background-color: #27ae60;
+        }
+        .tick-mark {
+          color: #27ae60;
+          font-size: 18px;
+        }
+        .pending-text {
+          color: #e74c3c;
+        }
+      </style>
+</head>
+ 
+<body>
+    <div class="container">
+        <h1>Task Tracker</h1>
+        <div class="add-task-container">
+          <input type="text" id="topic" placeholder="Enter Task">
+          <input type="date" id="dueDate">
+          <button onclick="addTask()"><i class="fas fa-plus"></i> Add Task</button>
+        </div>
+    
+        <table>
+          <thead>
+            <tr>
+              <th>Task</th>
+              <th>Due Date</th>
+              <th>Status</th>
+              <th>Action</th>
+            </tr>
+          </thead>
+          <tbody id="taskList">
+            <!-- Tasks will be dynamically added here -->
+          </tbody>
+        </table>
+      </div>
+ 
+    <script>
+        function addTask() {
+            const topic = document.getElementById("topic").value;
+            const dueDate = document.getElementById("dueDate").value;
+ 
+            if (topic && dueDate) {
+                const taskList = document.getElementById("taskList");
+                const newRow = document.createElement("tr");
+                newRow.classList.add("red"); // Newly added task is red by default
+                newRow.innerHTML = `
+          <td>${topic}</td>
+          <td>${dueDate}</td>
+          <td>
+            <button onclick="markDone(this)">Done</button>
+            <button onclick="markNotDone(this)">Not Done</button>
+          </td>
+          <td>
+            <button onclick="deleteTask(this)">Delete</button>
+          </td>
+        `;
+                taskList.appendChild(newRow);
+                updateLocalStorage();
+            } else {
+                alert("Please enter both topic and due date.");
+            }
+        }
+ 
+        function markDone(button) {
+      const row = button.parentNode.parentNode;
+      row.classList.remove("red");
+      row.classList.add("green");
+      const statusCell = row.cells[2];
+      statusCell.innerHTML = `
+        <span style="color: green;">&#10004;</span>
+      `;
+      const actionsCell = row.cells[3];
+      actionsCell.innerHTML = `
+        <button onclick="markNotDone(this)">Not Done</button>
+        <button class="delete" onclick="deleteTask(this)">Delete</button>
+      `;
+      updateLocalStorage();
+    }
+ 
+    function markNotDone(button) {
+      const row = button.parentNode.parentNode;
+      row.classList.remove("green");
+      row.classList.add("red");
+      const statusCell = row.cells[2];
+      statusCell.innerHTML = `
+        <span style="color: darkred;">Pending</span>
+      `;
+      const actionsCell = row.cells[3];
+      actionsCell.innerHTML = `
+        <button onclick="markDone(this)">Done</button>
+        <button class="delete" onclick="deleteTask(this)">Delete</button>
+      `;
+      updateLocalStorage();
+    }
+ 
+        function deleteTask(button) {
+            const row = button.parentNode.parentNode;
+            row.remove();
+            updateLocalStorage();
+        }
+ 
+        function updateStatusBasedOnDueDate() {
+            const rows = document.querySelectorAll("#taskList tr");
+ 
+            rows.forEach(row => {
+                const dueDate = new Date(row.cells[1].innerText);
+                const today = new Date();
+ 
+                if (dueDate < today && !row.classList.contains("green")) {
+                    row.classList.add("red");
+                    const statusCell = row.cells[2];
+                    statusCell.innerHTML = `
+          <span style="color: darkred;">Pending</span>
+          <button onclick="markDone(this)">Done</button>
+        `;
+                }
+            });
+        }
+        function updateLocalStorage() {
+            const rows = document.querySelectorAll("#taskList tr");
+            const tasks = [];
+ 
+            rows.forEach(row => {
+                const topic = row.cells[0].innerText;
+                const dueDate = row.cells[1].innerText;
+                const status = row.classList.contains("green") ? "done" : "pending";
+                tasks.push({ topic, dueDate, status });
+            });
+ 
+            localStorage.setItem("tasks", JSON.stringify(tasks));
+        }
+ 
+        function loadTasksFromLocalStorage() {
+            const tasks = JSON.parse(localStorage.getItem("tasks")) || [];
+ 
+            tasks.forEach(task => {
+                const taskList = document.getElementById("taskList");
+                const newRow = document.createElement("tr");
+                newRow.innerHTML = `
+          <td>${task.topic}</td>
+          <td>${task.dueDate}</td>
+          <td>
+            <button onclick="markDone(this)">Done</button>
+            <button onclick="markNotDone(this)">Not Done</button>
+          </td>
+          <td>
+            <button onclick="deleteTask(this)">Delete</button>
+          </td>
+        `;
+                if (task.status === "done") {
+                    newRow.classList.add("green");
+                } else {
+                    newRow.classList.add("red");
+                }
+                taskList.appendChild(newRow);
+            });
+        }
+ 
+        window.onload = function() {
+    loadTasksFromLocalStorage();
+    updateStatusBasedOnDueDate();
+  };
+</script>
+ 
+</body>
+ 
+</html>
